@@ -40,3 +40,20 @@ renderUI() {
 
     this.createButtons();
 }
+
+createButtons() {
+    let accept = this.add.text(20, 250, "Give Bed", {
+        backgroundColor: "#0f0",
+        color: "#000",
+        padding: { x: 10, y: 5 }
+    }).setInteractive();
+
+    let reject = this.add.text(160, 250, "Skip", {
+        backgroundColor: "#f00",
+        color: "#000",
+        padding: { x: 10, y: 5 }
+    }).setInteractive();
+
+    accept.on("pointerdown", () => this.makeDecision(true));
+    reject.on("pointerdown", () => this.makeDecision(false));
+}
