@@ -18,6 +18,27 @@ export default class GameScene extends Phaser.Scene {
         this.renderUI();
     }
 
+    startPatient() {
+        this.timeLeft = 10;
+
+        this.renderUI();
+
+        this.timerText = this.add.text(250, 20, "Time: " + this.timeLeft, { color: "#000" });
+
+        this.timerEvent = this.time.addEvent({
+            delay: 1000,
+            callback: () => {
+                this.timeLeft--;
+                this.timerText.setText("Time: " + this.timeLeft);
+
+                if (this.timeLeft <= 0) {
+                    this.makeDecision(false);
+                }
+            },
+            loop: true
+        });
+    }
+
     renderUI() {
         this.children.removeAll();
 
@@ -51,6 +72,9 @@ export default class GameScene extends Phaser.Scene {
     }
 
     makeDecision(giveBed) {
+
+        this.timerEvent.remove(false);
+
         let p = this.patients[this.currentIndex];
 
         let survived = false;
