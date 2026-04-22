@@ -11,4 +11,4 @@ const config = {
     scene: [StartScene, GameScene, ResultScene]
 };
 
-new Phaser.Game(config);
+window.game = new Phaser.Game(config);
