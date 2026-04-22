@@ -6,38 +6,27 @@ export default class GameScene extends Phaser.Scene {
     create() {
         this.beds = 2;
         this.currentIndex = 0;
+        this.results = [];
 
         this.patients = [
-            {
-                name: "Anna",
-                age: 23,
-                survival: 0.8,
-                condition: "Moderate"
-            },
-            {
-                name: "John",
-                age: 67,
-                survival: 0.4,
-                condition: "Severe"
-            },
-            {
-                name: "Maria",
-                age: 35,
-                survival: 0.6,
-                condition: "Stable"
-            }
+            { name: "Anna", age: 23, survival: 0.8, condition: "Moderate" },
+            { name: "John", age: 67, survival: 0.4, condition: "Severe" },
+            { name: "Maria", age: 35, survival: 0.6, condition: "Stable" }
         ];
 
-        this.results = [];
+        // UI container
+        this.ui = this.add.container(0, 0);
 
         this.showPatient();
     }
 
-    showPatient() {
-        // очистка экрана
-        this.children.removeAll();
+    clearUI() {
+        this.ui.removeAll(true);
+    }
 
-        // если пациентов больше нет
+    showPatient() {
+        this.clearUI();
+
         if (this.currentIndex >= this.patients.length) {
             this.scene.start("ResultScene", {
                 results: this.results
@@ -47,41 +36,24 @@ export default class GameScene extends Phaser.Scene {
 
         const p = this.patients[this.currentIndex];
 
-        // UI
-        this.add.text(20, 20, `Beds left: ${this.beds}`, {
-            color: "#000"
-        });
-
-        this.add.text(20, 80, `Name: ${p.name}`, {
-            color: "#000"
-        });
-
-        this.add.text(20, 120, `Age: ${p.age}`, {
-            color: "#000"
-        });
-
-        this.add.text(20, 160, `Condition: ${p.condition}`, {
-            color: "#000"
-        });
-
-        this.add.text(20, 200, `Survival: ${Math.floor(p.survival * 100)}%`, {
-            color: "#000"
-        });
+        this.ui.add(this.add.text(20, 20, `Beds: ${this.beds}`, { color: "#000" }));
+        this.ui.add(this.add.text(20, 80, `Name: ${p.name}`, { color: "#000" }));
+        this.ui.add(this.add.text(20, 120, `Age: ${p.age}`, { color: "#000" }));
+        this.ui.add(this.add.text(20, 160, `Condition: ${p.condition}`, { color: "#000" }));
+        this.ui.add(this.add.text(20, 200, `Survival: ${Math.floor(p.survival * 100)}%`, { color: "#000" }));
 
         // timer
         this.timeLeft = 10;
 
-        this.timerText = this.add.text(250, 20, "Time: 10", {
-            color: "#000"
-        });
+        const timerText = this.add.text(250, 20, "Time: 10", { color: "#000" });
+        this.ui.add(timerText);
 
         this.timerEvent = this.time.addEvent({
             delay: 1000,
             repeat: 9,
             callback: () => {
                 this.timeLeft--;
-
-                this.timerText.setText("Time: " + this.timeLeft);
+                timerText.setText("Time: " + this.timeLeft);
 
                 if (this.timeLeft <= 0) {
                     this.makeDecision(false);
@@ -102,17 +74,14 @@ export default class GameScene extends Phaser.Scene {
             padding: { x: 10, y: 5 }
         }).setInteractive();
 
-        accept.on("pointerdown", () => {
-            this.makeDecision(true);
-        });
+        this.ui.add(accept);
+        this.ui.add(reject);
 
-        reject.on("pointerdown", () => {
-            this.makeDecision(false);
-        });
+        accept.on("pointerdown", () => this.makeDecision(true));
+        reject.on("pointerdown", () => this.makeDecision(false));
     }
 
     makeDecision(giveBed) {
-        // остановить таймер
         if (this.timerEvent) {
             this.timerEvent.remove();
         }
@@ -123,17 +92,15 @@ export default class GameScene extends Phaser.Scene {
 
         if (giveBed && this.beds > 0) {
             this.beds--;
-
             survived = Math.random() < p.survival;
         }
 
         this.results.push({
             name: p.name,
-            survived: survived
+            survived
         });
 
         this.currentIndex++;
-
         this.showPatient();
     }
 }
