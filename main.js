@@ -4,11 +4,18 @@ import ResultScene from "./scenes/ResultScene.js";
 
 const config = {
     type: Phaser.AUTO,
-    width: 400,
-    height: 600,
-    backgroundColor: "#f5f5f5",
+
+    width: window.innerWidth,
+    height: window.innerHeight,
+
     parent: "game-container",
-    scene: [StartScene, GameScene, ResultScene]
+
+    scene: [StartScene, GameScene, ResultScene],
+
+    scale: {
+        mode: Phaser.Scale.RESIZE,
+        autoCenter: Phaser.Scale.CENTER_BOTH
+    }
 };
 
-new Phaser.Game(config);
+window.game = new Phaser.Game(config);
