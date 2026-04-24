@@ -81,12 +81,19 @@ export default class GameScene extends Phaser.Scene {
         // =====================
         // UI
         // =====================
-        this.uiText = this.add.text(20, 20, "Select patient", {
-            fontSize: "20px",
-            color: "#000",
-            backgroundColor: "#fff",
-            padding: { x: 5, y: 5 }
-        }).setDepth(20);
+
+this.uiText = this.add.text(20, 20, "Select patient", {
+    fontSize: "20px",
+    color: "#000",
+    backgroundColor: "#fff",
+    padding: { x: 5, y: 5 }
+}).setDepth(20);
+this.uiText.setVisible(false);
+
+        this.shortcutUI = this.add.image(20, 20, "short")
+    .setOrigin(0, 0)
+    .setDepth(50)
+    .setScale(0.1);
 
         // =====================
         // DIAGNOSIS PANEL
