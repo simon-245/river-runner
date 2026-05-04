@@ -1,4 +1,5 @@
 import StartScene from "./scenes/StartScene.js";
+import StoryScene from "./scenes/StoryScene.js";
 import GameScene from "./scenes/GameScene.js";
 import ResultScene from "./scenes/ResultScene.js";
 
@@ -10,7 +11,7 @@ const config = {
 
     parent: "game-container",
 
-    scene: [StartScene, GameScene, ResultScene],
+    scene: [StartScene, StoryScene, GameScene, ResultScene],
 
     scale: {
         mode: Phaser.Scale.RESIZE,
