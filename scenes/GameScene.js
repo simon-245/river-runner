@@ -12,6 +12,7 @@ export default class GameScene extends Phaser.Scene {
         this.load.image("john", "images/old_man.png");
         this.load.image("maria", "images/girl.png");
         this.load.image("old_woman", "images/old_woman.png");
+        this.load.image("fever_child", "images/fever child.png");
         this.load.image("woman", "images/woman.png");
         this.load.image("curtain", "images/curton.jpeg");
 
@@ -62,6 +63,7 @@ export default class GameScene extends Phaser.Scene {
                 sprite: "anna",
                 health: 80,
                 status: "waiting",
+                mainSlot: 0,
                 disease: "Guillain Barré Syndrome (Zika related)",
                 outcomeReason: "",
                 symptoms: "• Progressive weakness starting in legs\n• Ascending paralysis\n• Mild respiratory compromise\n• Reflexes diminished\n• Recent fever and rash 2 weeks ago\n• Difficulty walking",
@@ -122,6 +124,7 @@ export default class GameScene extends Phaser.Scene {
                 sprite: "john",
                 health: 45,
                 status: "waiting",
+                mainSlot: 1,
                 disease: "Severe Guillain Barré Syndrome (Zika related)",
                 symptoms: "• Rapidly progressing paralysis\n• Severe respiratory failure\n• Requires intubation\n• Complete loss of leg mobility\n• Weakness in upper extremities\n• CSF protein elevated\n• EMG shows demyelination",
                 briefing: "This is a critical case with respiratory muscles paralyzed. Mechanical ventilation is essential. Age and rapid progression indicate higher mortality risk. Demyelination on EMG confirms axonal damage. ICU management with immunotherapy is standard care.",
@@ -181,6 +184,7 @@ export default class GameScene extends Phaser.Scene {
                 sprite: "maria",
                 health: 60,
                 status: "waiting",
+                mainSlot: 2,
                 disease: "Guillain Barré Syndrome with Autonomic Dysfunction (Zika related)",
                 symptoms: "• Moderate ascending paralysis\n• Facial weakness\n• Dysarthria\n• Autonomic instability\n• Fluctuating BP and HR\n• History of Zika infection 3 weeks ago\n• Respiratory function declining",
                 briefing: "Autonomic dysfunction complicates her GBS, causing blood pressure and heart rate fluctuations. This requires careful hemodynamic monitoring. Facial weakness and dysarthria indicate cranial nerve involvement. Close respiratory monitoring needed as function is still declining.",
@@ -288,6 +292,74 @@ export default class GameScene extends Phaser.Scene {
                             { text: "Full recovery expected", correct: false },
                             { text: "Immediate death", correct: false },
                             { text: "No change", correct: false }
+                        ]
+                    }
+                ]
+            },
+            {
+                name: "Fever Child",
+                age: 7,
+                survival: 0.5,
+                sprite: "fever_child",
+                health: 55,
+                status: "atDoor",
+                disease: "High fever with weakness",
+                symptoms: "• High fever\n• Chills\n• Lethargy\n• Poor appetite\n• Generalized weakness",
+                briefing: "This child is waiting at the door with a high fever and signs of dehydration. Prompt evaluation and supportive care are needed.",
+                vitals: "BP 100/65 · HR 110 · RR 24 · GCS 15",
+                questions: [
+                    {
+                        prompt: "What is the most appropriate first step for this child?",
+                        choices: [
+                            { text: "Give fluids and monitor vital signs", correct: true },
+                            { text: "Start antibiotics immediately", correct: false },
+                            { text: "Give diuretics", correct: false },
+                            { text: "Send home with rest", correct: false }
+                        ]
+                    },
+                    {
+                        prompt: "What is the best next step to support this patient's condition?",
+                        choices: [
+                            { text: "Provide supportive care and reassess", correct: true },
+                            { text: "Administer only painkillers", correct: false },
+                            { text: "Withhold fluids", correct: false },
+                            { text: "Use oxygen only", correct: false }
+                        ]
+                    },
+                    {
+                        prompt: "What medication is most appropriate for managing this child's high fever?",
+                        choices: [
+                            { text: "Paracetamol (acetaminophen)", correct: true },
+                            { text: "Antibiotics", correct: false },
+                            { text: "NSAIDs", correct: false },
+                            { text: "Steroids", correct: false }
+                        ]
+                    },
+                    {
+                        prompt: "What should be avoided when treating fever in children?",
+                        choices: [
+                            { text: "Aspirin due to risk of Reye's syndrome", correct: true },
+                            { text: "Paracetamol", correct: false },
+                            { text: "Fluids", correct: false },
+                            { text: "Rest", correct: false }
+                        ]
+                    },
+                    {
+                        prompt: "What is the priority in managing this child's condition?",
+                        choices: [
+                            { text: "Monitor for dehydration and provide supportive care", correct: true },
+                            { text: "Start IV antibiotics immediately", correct: false },
+                            { text: "Give sedatives for lethargy", correct: false },
+                            { text: "Restrict all fluids", correct: false }
+                        ]
+                    },
+                    {
+                        prompt: "If the correct treatment is given, what is the expected outcome?",
+                        choices: [
+                            { text: "Fever resolves and child improves", correct: true },
+                            { text: "Fever worsens and complications develop", correct: false },
+                            { text: "Child remains lethargic indefinitely", correct: false },
+                            { text: "No change in symptoms", correct: false }
                         ]
                     }
                 ]
@@ -615,10 +687,22 @@ ${patient.vitals}`
                     this.startHealthDrain(this.selected);
                 }
 
+                const patient = this.patients[i];
+                if (patient && patient.status === "atDoor") {
+                    const freeSlot = this.findFreeMainSlot();
+                    if (freeSlot !== null) {
+                        patient.status = "waiting";
+                        patient.mainSlot = freeSlot;
+                        this.updatePatientPosition(i);
+                        this.refreshWaitingPositions();
+                        this.refreshDoorPositions();
+                        this.startHealthDrain(i);
+                        this.uiText.setText(`${patient.name} has moved into a free bed slot and is waiting for treatment.`);
+                    }
+                }
+
                 this.selected = i;
                 this.updateUI();
-
-                const patient = this.patients[i];
 
                 // reset old
                 this.diagnosisImage.setVisible(false);
@@ -789,24 +873,17 @@ Beds occupied: ${this.occupiedBeds}/${this.totalBeds}`
     }
 
     checkEnableDoorPatients() {
-    const hasWaiting = this.patients.some(p => p && p.status === "waiting");
-    if (!hasWaiting) {
-        this.patients.forEach((p, i) => {
-            if (p && p.status === "atDoor") {
-                p.status = "waiting";
-                if (this.cards[i]) {
-                    this.cards[i].setInteractive({ useHandCursor: true });
-                }
-                this.startHealthDrain(i, 5);  // ← drains at 5% per second
-            }
-        });
+        // Door patients remain at the door until the player clicks them.
+        // Do not automatically move them into freed patient slots.
     }
-}
 
-    startHealthDrain(index, drainRate = 1) {
+    startHealthDrain(index, drainRate = 5) {
         const patient = this.patients[index];
         if (!patient || patient.status !== "waiting") return;
-        if (this.healthDrainEvents[index]) return;
+        if (this.healthDrainEvents[index]) {
+            this.healthDrainEvents[index].remove(false);
+            this.healthDrainEvents[index] = null;
+        }
 
         this.healthDrainEvents[index] = this.time.addEvent({
             delay: 1000,
@@ -1088,6 +1165,97 @@ this.startHealthDrain(this.selected, 5);
         }
     }
 
+    getDoorSlot(doorIndex) {
+        const doorX = 80;
+        const doorY = this.scale.height * 0.3;
+        const doorSpacing = 80;
+        return {
+            x: doorX,
+            y: doorY + doorIndex * doorSpacing
+        };
+    }
+
+    getWaitingSlot(waitingIndex) {
+        const spacing = this.scale.width / 4;
+        return {
+            x: spacing * (waitingIndex + 1),
+            y: this.scale.height * 0.48
+        };
+    }
+
+    findFreeMainSlot() {
+        for (let slot = 0; slot < 3; slot++) {
+            const occupied = this.patients.some(p => p && p.mainSlot === slot && p.status !== "dead" && p.status !== "treated");
+            if (!occupied) {
+                return slot;
+            }
+        }
+        return null;
+    }
+
+    updatePatientPosition(index) {
+        const patient = this.patients[index];
+        const card = this.cards[index];
+        const curtain = this.curtains[index];
+        const display = this.healthDisplays[index];
+        if (!patient || !card || !curtain || !display) return;
+
+        if (patient.status === "atDoor") {
+            const doorPatients = this.patients.filter(p => p && p.status === "atDoor");
+            const doorIndex = doorPatients.indexOf(patient);
+            const { x, y } = this.getDoorSlot(doorIndex);
+            card.setPosition(x, y);
+            card.setScale(0.28);
+            curtain.setPosition(x, this.scale.height * 0.44);
+            display.bg.setX(x - 60);
+            display.bg.setY(y);
+            display.fill.setX(x - 60);
+            display.fill.setY(y);
+            display.label.setX(x);
+            display.label.setY(y);
+        } else if (patient.status === "waiting" || patient.status === "inTreatment") {
+            const spacing = this.scale.width / 4;
+            let x;
+            const patientIndex = this.patients.indexOf(patient);
+            if (patient.mainSlot != null) {
+                x = spacing * (patient.mainSlot + 1);
+            } else if (patientIndex >= 0 && patientIndex < 3) {
+                x = spacing * (patientIndex + 1);
+            } else {
+                const waitingPatients = this.patients.filter(p => p && (p.status === "waiting" || p.status === "inTreatment") && p.mainSlot == null);
+                const waitingIndex = waitingPatients.indexOf(patient);
+                const slot = this.getWaitingSlot(waitingIndex);
+                x = slot.x;
+            }
+            const y = this.scale.height * 0.48;
+            card.setPosition(x, y);
+            card.setScale(0.22);
+            curtain.setPosition(x, this.scale.height * 0.44);
+            display.bg.setX(x - 60);
+            display.bg.setY(this.scale.height * 0.66);
+            display.fill.setX(x - 60);
+            display.fill.setY(this.scale.height * 0.66);
+            display.label.setX(x);
+            display.label.setY(this.scale.height * 0.66);
+        }
+    }
+
+    refreshDoorPositions() {
+        this.patients.forEach((patient, index) => {
+            if (patient && patient.status === "atDoor") {
+                this.updatePatientPosition(index);
+            }
+        });
+    }
+
+    refreshWaitingPositions() {
+        this.patients.forEach((patient, index) => {
+            if (patient && (patient.status === "waiting" || patient.status === "inTreatment")) {
+                this.updatePatientPosition(index);
+            }
+        });
+    }
+
     hideCurtain(index) {
         const curtain = this.curtains[index];
         const card = this.cards[index];
@@ -1134,22 +1302,11 @@ this.startHealthDrain(this.selected, 5);
             this.treatmentEvents[index] = null;
         }
 
+        // Move door patient to the removed patient's position if it's Anna, John, or Maria
+
         if (patient.status === "inTreatment" && survived) {
             this.occupiedBeds = Math.max(0, this.occupiedBeds - 1);
             this.hideCurtain(index);
-            
-            // Check if there are door patients waiting and move one to waiting status
-            const doorPatients = this.patients.filter(p => p && p.status === "atDoor");
-            if (doorPatients.length > 0) {
-                const nextPatient = doorPatients[0];
-                const nextIndex = this.patients.indexOf(nextPatient);
-                nextPatient.status = "waiting";
-                if (this.cards[nextIndex]) {
-                    this.cards[nextIndex].setInteractive({ useHandCursor: true });
-                }
-                this.startHealthDrain(nextIndex);
-                this.uiText.setText(`${nextPatient.name} has arrived and is now waiting for treatment.`);
-            }
         }
 
         let outcomeText;
